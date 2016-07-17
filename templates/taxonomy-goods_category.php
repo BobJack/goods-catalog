@@ -8,10 +8,72 @@
 
 $term = get_term_by('slug', get_query_var('term'), get_query_var('taxonomy'));
 
-global $posts;
-if (have_posts()) { // fix 'undefined offset 0'
-    $post = $posts[0];
-}
+        ?>
+        <form action="" method="get">
+            <?php 
+                $dropdown_names_args = array(
+                    'hide_empty' => false,
+                    'parent' => 0
+                );
+                $dropdown_names = get_terms( array('goods_filter'), $dropdown_names_args );
+                echo '<div class="filters_wrapper">';
+                foreach ($dropdown_names as $dropdown_name) {
+                    echo '<div class="filter_wrapper"><span class="filter_text">' . $dropdown_name->name . '</span>' . 
+                    '<select class="filter_select" name="filters[' . $dropdown_name->slug . ']">';
+                        echo '<option value="default">';
+                            echo $dropdown_name->name;
+                        echo '</option>';
+                        $filter_args = array(
+                            'hide_empty' => false,
+                            'parent' => $dropdown_name->term_id
+                        );
+                        $filters = get_terms( array('goods_filter'), $filter_args );
+                        foreach ($filters as $filter) {
+                            echo '<option value="' . $filter->slug . '">';
+                                echo $filter->name;
+                            echo '</option>';
+                        }
+                    echo '</select></div>';
+                }
+                echo '</div>';
+            ?>
+            <div class="filters_wrapper"><button type="submit" style="margin-left: 50px;">Фильтровать</button></div>
+        </form>
+<div class="clear"></div> 
+
+<?php
+
+if (isset($_GET['filters'])) {
+    global $wp_query;
+    $args = array(
+        'post_type' => 'goods',
+        'tax_query' => array(
+            'relation' => 'AND'
+        )
+    );
+    foreach ($_GET['filters'] as $filter) {
+        if ($filter != 'default') {
+            $args['tax_query'][] = array(
+                'taxonomy' => 'goods_filter',
+                'field' => 'slug',
+                'terms' => $filter
+            );
+        }
+    }
+    // echo '<pre>';
+    // var_dump($args);
+    // echo '</pre>';
+    $args = array_merge( 
+        $wp_query->query_vars, 
+        $args 
+    );
+    query_posts( $args );
+ } else {
+    global $posts;
+    if (have_posts()) { // fix 'undefined offset 0'
+        $post = $posts[0];
+    }
+ }
 ob_start();
 
 echo '<h2 class="single-category-title">' . single_cat_title('', false) . '</h2>';
